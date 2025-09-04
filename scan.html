@@ -109,13 +109,29 @@
       if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          previewImage.src = e.target.result;
-          previewImage.classList.remove('hidden');
-          placeholderText.classList.add('hidden');
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+          const imageUrl = e.target.result;
+
+      // Preview image
+        previewImage.src = imageUrl;
+        previewImage.classList.remove('hidden');
+        placeholderText.classList.add('hidden');
+
+      // Inject into chatbot area
+        const userBubble = document.createElement("div");
+        userBubble.className = "text-sm text-gray-700 dark:text-white bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm";
+        userBubble.innerHTML = `<strong>User:</strong> <img src="${imageUrl}" class="mt-2 rounded-lg max-h-40"/>`;
+        chatArea.appendChild(userBubble);
+
+        const botBubble = document.createElement("div");
+        botBubble.className = "text-sm text-gray-800 dark:text-gray-200 bg-green-100 dark:bg-green-900 p-3 rounded-lg shadow-sm";
+        botBubble.innerHTML = `<strong>WiseWaste:</strong> Thanks for your image! We’re analyzing it...`;
+        chatArea.appendChild(botBubble);
+
+        chatArea.scrollTop = chatArea.scrollHeight;
+    };
+    reader.readAsDataURL(file);
+  }
+});
 
     // Dark Mode Toggle with Persistence
     function toggleDarkMode() {

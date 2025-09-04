@@ -3,52 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WiseWaste UI Mockup</title>
+  <title>WiseWaste UI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://unpkg.com/lucide-static@latest/font/lucide.css" rel="stylesheet" />
 </head>
-<body class="bg-green-50 min-h-screen p-6 md:p-10">
-  <div class="w-full max-w-6xl mx-auto space-y-10">
+<body class="bg-green-50 min-h-screen py-10 px-4 md:px-20">
 
-    <!-- Header -->
-    <header class="text-center">
-      <h1 class="text-5xl font-extrabold text-green-700 tracking-tight">WiseWaste</h1>
-      <p class="text-lg text-green-600 mt-2 font-medium">Your Smart Waste Disposal Companion</p>
-    </header>
+  <!-- Header -->
+  <header class="text-center mb-12">
+    <h1 class="text-5xl font-extrabold text-green-700 tracking-tight">WiseWaste</h1>
+    <p class="text-lg text-green-600 mt-2 font-medium">Your Smart Waste Disposal Companion</p>
+  </header>
 
-    <!-- Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      
-      <!-- Scan Card -->
-      <div class="bg-white p-10 rounded-2xl shadow-lg text-center border border-green-100">
-        <h2 class="text-3xl font-bold text-green-700 mb-4">Scan Your Waste Item</h2>
-        <p class="text-gray-600 text-base mb-6">
-          Click below to take a photo and get disposal instructions instantly.
-        </p>
-        <a href="scan.html">
-          <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-lg shadow-md transition-all duration-200">
-            Scan Item 📷
-          </button>
-        </a>
+  <!-- Content Cards Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+
+    <!-- Scan Card -->
+    <div class="bg-white p-10 rounded-2xl shadow-lg text-center border border-green-100 flex flex-col justify-center">
+      <h2 class="text-3xl font-bold text-green-700 mb-4">Scan Your Waste Item</h2>
+      <p class="text-gray-600 text-base mb-6">Click below to take a photo and get disposal instructions instantly.</p>
+      <a href="scan.html">
+        <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-lg shadow-md transition-all duration-200">
+          Scan Item 📷
+        </button>
+      </a>
+    </div>
+
+    <!-- Progress Card -->
+    <div class="bg-white p-10 rounded-2xl shadow-lg border border-green-100 text-center flex flex-col justify-center">
+      <div class="flex justify-center items-center gap-2 text-green-700 mb-4">
+        <i class="lucide lucide-trophy w-6 h-6"></i>
+        <h2 class="text-3xl font-bold">Your Weekly Progress</h2>
       </div>
-
-      <!-- Progress Card -->
-      <div class="bg-white border border-green-100 shadow-xl rounded-2xl p-10 flex flex-col items-center text-center space-y-4">
-        <div class="flex items-center gap-2 text-green-700">
-          <i class="lucide lucide-trophy w-6 h-6"></i>
-          <h2 class="text-3xl font-bold">Your Weekly Progress</h2>
-        </div>
-        <p class="text-gray-700 text-base">Items sorted: <strong class="text-green-700">14</strong></p>
-        <p class="text-gray-700 text-base">Best streak: <strong class="text-green-700">6 days</strong></p>
-        <div class="w-full bg-green-100 rounded-full h-4 overflow-hidden">
-          <div class="bg-green-500 h-4 rounded-full transition-all duration-300" style="width: 70%"></div>
-        </div>
-        <p class="text-sm text-green-600 font-medium">
-          Tier: <strong>Bronze ☕🤎</strong> You're doing great – Himav :)
-        </p>
+      <p class="text-gray-700 text-base">Items sorted: <strong class="text-green-700">14</strong></p>
+      <p class="text-gray-700 text-base mb-4">Best streak: <strong class="text-green-700">6 days</strong></p>
+      <div class="w-full bg-green-100 rounded-full h-4 mb-2">
+        <div class="bg-green-500 h-4 rounded-full transition-all duration-300" style="width: 70%"></div>
       </div>
-
+      <p class="text-sm text-green-600 font-medium">
+        Tier: <strong>Bronze ☕🤎</strong> You're doing great – Himav :)
+      </p>
     </div>
   </div>
+
 </body>
 </html>

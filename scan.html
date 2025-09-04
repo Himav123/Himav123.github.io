@@ -74,6 +74,7 @@
       
       <!-- Chat Area -->
       <div id="chatArea" class="flex-1 overflow-y-auto space-y-4 border border-green-100 dark:border-green-700 bg-green-50 dark:bg-gray-700 p-4 rounded-xl">
+        <!-- Initial Message -->
         <div class="text-sm text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm">
           <strong>User:</strong> [Inserted Image]
         </div>
@@ -113,7 +114,7 @@
     const userInput = document.getElementById("userInput");
     const sendBtn = document.getElementById("sendBtn");
 
-    // Image Preview + Inject to Chat
+    // Image Preview + Chat Integration
     imageInput.addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file) {
@@ -121,22 +122,28 @@
         reader.onload = function(e) {
           const imageUrl = e.target.result;
 
-          // Update preview
+          // Preview image
           previewImage.src = imageUrl;
           previewImage.classList.remove('hidden');
           placeholderText.classList.add('hidden');
 
-          // Add to Chat Area
+          // User image message
           const userBubble = document.createElement("div");
           userBubble.className = "text-sm text-gray-700 dark:text-white bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm";
-          userBubble.innerHTML = `<strong>User:</strong> <img src="${imageUrl}" class="mt-2 rounded-lg max-h-40"/>`;
+          userBubble.innerHTML = `<strong>User:</strong><br><img src="${imageUrl}" class="mt-2 rounded-lg max-h-40"/>`;
           chatArea.appendChild(userBubble);
 
+          // WiseWaste bot reply with same image
           const botBubble = document.createElement("div");
           botBubble.className = "text-sm text-gray-800 dark:text-gray-200 bg-green-100 dark:bg-green-900 p-3 rounded-lg shadow-sm";
-          botBubble.innerHTML = `<strong>WiseWaste:</strong> Thanks for your image! We’re analyzing it...`;
+          botBubble.innerHTML = `
+            <strong>WiseWaste:</strong> Here's what I see:<br>
+            <img src="${imageUrl}" class="mt-2 rounded-lg max-h-40"/>
+            <p class="mt-2 italic text-sm text-gray-600 dark:text-gray-400">Analyzing waste type...</p>
+          `;
           chatArea.appendChild(botBubble);
 
+          // Scroll to bottom
           chatArea.scrollTop = chatArea.scrollHeight;
         };
         reader.readAsDataURL(file);
@@ -164,3 +171,4 @@
   </script>
 </body>
 </html>
+

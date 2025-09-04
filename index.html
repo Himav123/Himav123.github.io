@@ -1,79 +1,53 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>The Best Tea - By Region</title>
-  <link href='https://fonts.googleapis.com/css?family=Covered+By+Your+Grace|Raleway:100,500,600,800' rel='stylesheet'>
-  <link rel='stylesheet' href='style.css'>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WiseWaste UI Mockup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://unpkg.com/lucide-static@latest/font/lucide.css" rel="stylesheet" />
 </head>
-<body>
+<body class="bg-green-50 min-h-screen p-10 flex flex-col items-center">
+  <div class="w-full max-w-3xl space-y-10">
+    
+    <!-- Header -->
+    <header class="text-center">
+      <h1 class="text-5xl font-extrabold text-green-700 tracking-tight">WiseWaste</h1>
+      <p class="text-lg text-green-600 mt-2 font-medium">
+        Your Smart Waste Disposal Companion
+      </p>
+    </header>
 
-  <div class='header'>
-    <h1>The Best Tea Regions</h1>
-  </div>
-
-  <div class='roasting'>
-    <h3>A Note on Temperature</h3>
-    <p>Tea has many varieties. These temperatures are suggestions. People should be able to find the best temperature for themselves.</p>
-  <br>
-      <div class='spectrum'>
-        <div class='green'>
-          <h4>Green Tea</h4>
-          <h5>140°F-185°F</h5>
-          <p>Green tea is a type of tea that is made from Camellia sinensis leaves and buds that have not undergone the same withering and oxidation process which is used to make oolong teas and black teas.</p>
-        </div>
-        <div class='light'>
-          <h4>White Tea</h4>
-          <h5>170°F-185°F</h5>
-          <p> White tea is harvested before the tea plant’s leaves open fully, when the young buds are still covered by fine white hairs, hence the name “white” tea.</p>
-        </div>
-        <div class='city'>
-          <h4>Oolong Tea</h4>
-          <h5>185°F-205° F</h5>
-          <p>Oolong is a traditional semi-oxidized Chinese tea produced through a process including withering the plant under strong sun and oxidation before curling and twisting.</p>
-        </div>
-        <div class='vienna'>
-          <h4>Herbal Tea</h4>
-          <h5>150°F-180°F</h5>
-          <p>Herbal teas, also known as herbal infusions and less commonly called tisanes, are beverages made from the infusion or decoction of herbs, spices, or other plant material in hot water.</p>
-        </div>
-        <div class='italian'>
-          <h4>Black Tea</h4>
-          <h5>180°F-200°F</h5>
-          <p>Black tea, also translated to red tea in various East Asian languages, is a type of tea that is more oxidized than oolong, yellow, white and green teas. Black tea is generally stronger in flavour than other teas.</p>
-        </div>
+      <!-- Scan Card -->
+      <div class="max-w-md mx-auto bg-white p-10 rounded-2xl shadow-lg text-center border border-green-100">
+        <h2 class="text-3xl font-bold text-green-700 mb-4">Scan Your Waste Item</h2>
+          <p class="text-gray-600 text-base mb-6">
+            Click below to take a photo and get disposal instructions instantly.
+          </p>
+          <a href="scan.html">
+            <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-lg shadow-md transition-all duration-200">
+             Scan Item📷
+            </button>
+          </a>
       </div>
+
+
+    <!-- Progress Card -->
+    <div class="bg-white border border-green-100 shadow-xl rounded-2xl p-8 space-y-5 text-center">
+      <div class="flex items-center  text-green-700">
+        <i class="lucide lucide-trophy w-6 h-6"></i>
+        <h2 class="text-3xl font-bold">Your Weekly Progress</h2>
+      </div>
+      <p class="text-gray-700 text-base">Items sorted: <strong class="text-green-700">14</strong></p>
+      <p class="text-gray-700 text-base">Best streak: <strong class="text-green-700">6 days</strong></p>
+      <div class="w-full bg-green-100 rounded-full h-4 overflow-hidden">
+        <div class="bg-green-500 h-4 rounded-full transition-all duration-300" style="width: 70%"></div>
+      </div>
+      <p class="text-sm text-green-600 font-medium">
+        Tier: <strong>Bronze ☕🤎</strong> You're doing great – Himav :)
+      </p>
+    </div>
+
   </div>
-
-  <ul>
-    <li>
-      <h2>China</h2>
-      <p>China produces some 40% of the world’s tea weighing in at 2.4 million tonnes. It’s primarily grown in the provinces of Yunnan, Guangdong, and Zhejiang. While it’s the biggest exporter and grower of tea, China produces some of the best teas out there including Lapsang Souchong, Keemun and Green Gunpowder.</p>
-    </li>
-    <li>
-      <h2>India</h2>
-      <p>900,000 tonnes are produced in India annually making it the world’s second largest producer of tea with the crop being grown in bulk across Darjeeling, Nilgiri and Assam.
-The crop was first introduced commercially by the British in 1824 to compete with neighbouring China’s tea production monopoly.</p>
-    </li>
-    <li>
-      <h2>Kenya</h2>
-      <p>Asia doesn’t have it all its own way, as we head across the Indian Ocean to the top tea producing country in Africa, Kenya, which harvests just under 305,000 tonnes of tea each year. Kenya claims the accolade of the world’s top black tea producing country, with teas grown in the Kericho region, the Nyambene Hills and Nandi.</p>
-    </li>
-    <li>
-      <h2>Sri Lanka</h2>
-      <p>Heading back to Asia and to Sri Lanka, which produces just under 300,000 tonnes, around 17% of the world’s tea crop grown in the central mountains. Sought teas like Dimbula, Kenilworth and Uva are cultivated here such as Ceylon.
-The British in a bid to compete with China‘s tea production introduced the crop in 1867.</p>
-    </li>
-    <li>
-      <h2>Turkey</h2>
-      <p>This time we find ourselves in the Middle East, specifically to Turkey, which historically sat squarely on the ancient trades routes between east and west.Turkey grows 175,000 tonnes of tea.
-Notably, they grow Riza, which is a tea from the region of the same name found on the Black Sea coast.</p>
-    </li>
-    <li>
-      <h2>Indonesia</h2>
-      <p>Heading offshore we head to Indonesia, which produces 157,000 tonnes of tea annually. The crop was introduced in the 1700’s by the Dutch East India Company during colonial rule, producing mostly black and green teas from Indian Assam varieties. The Indonesian climate allows these tea varieties to thrive.Indonesian teas are renowned the world over for their high levels of catechin, a natural phenol and antioxidant.
-</p>
-    </li>
-  </ul>
-
 </body>
 </html>

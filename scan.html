@@ -1,6 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
 <head>
+  <!-- Load dark mode early -->
+  <script>
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WasteWise ChatBot UI</title>
@@ -8,7 +15,7 @@
   <script>
     tailwind.config = {
       darkMode: 'class'
-    }
+    };
   </script>
   <link href="https://unpkg.com/lucide-static@latest/font/lucide.css" rel="stylesheet" />
 </head>
@@ -20,7 +27,7 @@
       Go to Homepage
     </a>
     <button onclick="toggleDarkMode()" class="text-green-700 dark:text-green-300 text-sm px-3 py-2 border border-green-500 rounded hover:bg-green-100 dark:hover:bg-green-800 transition">
-      Toggle Dark Mode
+      Switch Mode
     </button>
   </div>
 
@@ -47,10 +54,18 @@
       />
 
       <!-- Add Image Button -->
-      <button onclick="document.getElementById('imageInput').click()" 
-        class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition shadow">
+      <button onclick="document.getElementById('imageInput').click()" class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition shadow">
         Add Image
       </button>
+
+      <!-- Waste Classification Card -->
+      <div class="bg-green-50 dark:bg-gray-700 border border-green-200 dark:border-green-600 rounded-xl p-5 space-y-2 shadow-inner">
+        <h3 class="text-xl font-bold text-green-700 dark:text-green-200">Waste Classification</h3>
+        <p class="text-sm text-gray-700 dark:text-gray-200"><strong>Type:</strong> Dry Waste (Placeholder)</p>
+        <p class="text-sm text-gray-700 dark:text-gray-200"><strong>Biodegradability:</strong> Non-biodegradable (Placeholder)</p>
+        <p class="text-sm text-green-700 dark:text-green-300 font-medium"><strong>Recommended Bin:</strong> Blue (Placeholder)</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 italic">Tip: Rinse the item before disposal to avoid contamination. (Placeholder)</p>
+      </div>
     </div>
 
     <!-- ChatBot Card -->
@@ -58,7 +73,7 @@
       <h2 class="text-3xl font-bold text-green-700 dark:text-green-300 mb-4">Ask WiseWaste</h2>
       
       <!-- Chat Area -->
-      <div class="flex-1 overflow-y-auto space-y-4 border border-green-100 dark:border-green-700 bg-green-50 dark:bg-gray-700 p-4 rounded-xl">
+      <div id="chatArea" class="flex-1 overflow-y-auto space-y-4 border border-green-100 dark:border-green-700 bg-green-50 dark:bg-gray-700 p-4 rounded-xl">
         <div class="text-sm text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm">
           <strong>User:</strong> [Inserted Image]
         </div>
@@ -70,39 +85,82 @@
       <!-- Input -->
       <div class="mt-4 flex gap-2">
         <input
+          id="userInput"
           type="text"
           placeholder="Ask about disposal, bins, recycling..."
           class="flex-1 border border-green-300 dark:border-green-600 rounded-lg px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-300 dark:bg-gray-700 dark:text-white"
         />
-        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow">
+        <button id="sendBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow">
           Send
         </button>
       </div>
     </div>
   </div>
 
-  <!-- JS for Image Preview + Dark Mode -->
+  <!-- JS Section -->
   <script>
+    // Dark mode toggle
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      localStorage.setItem('darkMode', html.classList.contains('dark'));
+    }
+
     const imageInput = document.getElementById('imageInput');
     const previewImage = document.getElementById('previewImage');
     const placeholderText = document.getElementById('placeholderText');
+    const chatArea = document.getElementById('chatArea');
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
 
+    // Image Preview + Inject to Chat
     imageInput.addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          previewImage.src = e.target.result;
+          const imageUrl = e.target.result;
+
+          // Update preview
+          previewImage.src = imageUrl;
           previewImage.classList.remove('hidden');
           placeholderText.classList.add('hidden');
+
+          // Add to Chat Area
+          const userBubble = document.createElement("div");
+          userBubble.className = "text-sm text-gray-700 dark:text-white bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm";
+          userBubble.innerHTML = `<strong>User:</strong> <img src="${imageUrl}" class="mt-2 rounded-lg max-h-40"/>`;
+          chatArea.appendChild(userBubble);
+
+          const botBubble = document.createElement("div");
+          botBubble.className = "text-sm text-gray-800 dark:text-gray-200 bg-green-100 dark:bg-green-900 p-3 rounded-lg shadow-sm";
+          botBubble.innerHTML = `<strong>WiseWaste:</strong> Thanks for your image! We’re analyzing it...`;
+          chatArea.appendChild(botBubble);
+
+          chatArea.scrollTop = chatArea.scrollHeight;
         };
         reader.readAsDataURL(file);
       }
     });
 
-    function toggleDarkMode() {
-      document.documentElement.classList.toggle('dark');
-    }
+    // Text-based chatbot input
+    sendBtn.addEventListener("click", function () {
+      const message = userInput.value.trim();
+      if (message !== "") {
+        const userBubble = document.createElement("div");
+        userBubble.className = "text-sm text-gray-700 dark:text-white bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm";
+        userBubble.innerHTML = `<strong>User:</strong> ${message}`;
+        chatArea.appendChild(userBubble);
+
+        const botBubble = document.createElement("div");
+        botBubble.className = "text-sm text-gray-800 dark:text-gray-200 bg-green-100 dark:bg-green-900 p-3 rounded-lg shadow-sm";
+        botBubble.innerHTML = `<strong>WiseWaste:</strong> Thanks for your message. We are processing your request.`;
+        chatArea.appendChild(botBubble);
+
+        userInput.value = "";
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+    });
   </script>
 </body>
 </html>

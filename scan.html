@@ -77,7 +77,7 @@
   <!-- JS for Image Preview -->
   <script>
     const imageInput = document.getElementById('imageInput');
-    const previewImage = document.getElementBy2Id('previewImage');
+    const previewImage = document.getElementById('previewImage');
     const placeholderText = document.getElementById('placeholderText');
 
     imageInput.addEventListener('change', function(event) {
@@ -89,9 +89,10 @@
           previewImage.classList.remove('hidden');
           placeholderText.classList.add('hidden');
         };
-        reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
       }
     });
   </script>
+
 </body>
 </html>

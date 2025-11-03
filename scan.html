@@ -11,6 +11,7 @@
   <title>WasteWise ChatBot UI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script> tailwind.config = { darkMode: 'class' } </script>
+  <link href="https://unpkg.com/lucide-static@latest/font/lucide.css" rel="stylesheet" />
 </head>
 <body class="bg-green-50 dark:bg-gray-900 dark:text-white min-h-screen p-6 transition-all duration-300">
 
@@ -55,17 +56,22 @@
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 flex flex-col h-[600px] border border-green-100 dark:border-green-700">
       <h2 class="text-3xl font-bold text-green-700 dark:text-green-300 mb-4">Ask WiseWaste</h2>
       
-      <div id="chatArea" class="flex-1 overflow-y-auto space-y-4 border border-green-100 dark:border-green-700 bg-green-50 dark:bg-gray-700 p-4 rounded-xl">
-      </div>
+      <div id="chatArea" class="flex-1 overflow-y-auto space-y-4 border border-green-100 dark:border-green-700 bg-green-50 dark:bg-gray-700 p-4 rounded-xl"></div>
 
-      <form id="chatForm" class="mt-4 flex gap-2">
+      <form id="chatForm" class="mt-4 flex gap-2" autocomplete="off">
         <input id="userInput" type="text" placeholder="Ask about disposal, bins, recycling..." class="flex-1 border border-green-300 dark:border-green-600 rounded-lg px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-300 dark:bg-gray-700 dark:text-white" />
         <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow">Send</button>
       </form>
     </div>
   </div>
 
+  <!-- JavaScript -->
   <script>
+    // ====== CONFIG (Option B – client-side call with exposed key) ======
+    const GEMINI_API_KEY = "AIzaSyDBjWHy1V5oeI9NT8Z4H5i0CIPsmy1uANE"; // <-- your key (public in page)
+    const GEMINI_MODEL = "gemini-1.5-flash";
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
     function toggleDarkMode() {
       const html = document.documentElement;
       html.classList.toggle('dark');
@@ -86,53 +92,73 @@
 
     addImageBtn.addEventListener('click', () => imageInput.click());
 
+    // Handle image upload: preview + send to Gemini (non-streaming)
     imageInput.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
+      const file = event.target.files?.[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const imageUrl = e.target.result;
+        const dataUrl = e.target.result;  // e.g. data:image/png;base64,xxxx
+        const mime = (file.type && file.type.startsWith('image/')) ? file.type : 'image/png';
+        const base64 = dataUrl.split(',')[1];
 
-        previewImage.src = imageUrl;
+        // Show preview
+        previewImage.src = dataUrl;
         previewImage.classList.remove('hidden');
         placeholderText.classList.add('hidden');
 
-        addBubble('user', `<img src="${imageUrl}" class="mt-2 rounded-lg max-h-40" />`);
+        // Chat bubbles
+        addBubble('user', `<img src="${dataUrl}" class="mt-2 rounded-lg max-h-40" />`);
         const botBubble = addBubble('bot', 'Analyzing the item…');
 
-        const payload = {
-          messages: [{ role: 'user', content: 'Classify this waste item by type, biodegradability, and bin color. Add a disposal tip.' }],
-          imageDataUrl: imageUrl
-        };
+        const prompt = [
+          "Classify this waste item. Provide these four lines exactly:",
+          "Type: <material/category>",
+          "Biodegradability: <biodegradable/non-biodegradable/partially>",
+          "Recommended Bin: <Green/Blue/Brown/Black> (typical Indian schemes)",
+          "Tip: <one short actionable tip>"
+        ].join("\n");
 
         try {
-          const text = await callBackend(payload, (chunk) => botBubble.innerHTML = `<strong>WiseWaste:</strong> ${chunk}`);
-          clsType.innerHTML = `<strong>Type:</strong> ${(text.match(/Type:\s*(.*)/) || ['','—'])[1]}`;
-          clsBio.innerHTML  = `<strong>Biodegradability:</strong> ${(text.match(/Biodegradability:\s*(.*)/) || ['','—'])[1]}`;
-          clsBin.innerHTML  = `<strong>Recommended Bin:</strong> ${(text.match(/Recommended Bin:\s*(.*)/) || ['','—'])[1]}`;
-          clsTip.innerHTML  = `Tip: ${(text.match(/Tip:\s*(.*)/) || ['','—'])[1]}`;
-        } catch (e) {
-          botBubble.innerHTML = `<strong>WiseWaste:</strong> Error analyzing image.`;
+          const text = await callGemini(prompt, { mime, base64 });
+          botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(text)}`;
+
+          // Fill the classification card with simple regex extraction
+          clsType.innerHTML = `<strong>Type:</strong> ${(text.match(/Type:\s*(.*)/i) || ['','—'])[1]}`;
+          clsBio.innerHTML  = `<strong>Biodegradability:</strong> ${(text.match(/Biodegradability:\s*(.*)/i) || ['','—'])[1]}`;
+          clsBin.innerHTML  = `<strong>Recommended Bin:</strong> ${(text.match(/Recommended Bin:\s*(.*)/i) || ['','—'])[1]}`;
+          clsTip.innerHTML  = `Tip: ${(text.match(/Tip:\s*(.*)/i) || ['','—'])[1]}`;
+        } catch (err) {
+          console.error(err);
+          botBubble.innerHTML = `<strong>WiseWaste:</strong> Sorry—image analysis failed.`;
         }
+        chatArea.scrollTop = chatArea.scrollHeight;
       };
       reader.readAsDataURL(file);
     });
 
+    // Text chat (non-streaming)
     chatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const message = userInput.value.trim();
       if (!message) return;
-      addBubble('user', message);
+
+      addBubble('user', escapeHtml(message));
       userInput.value = '';
-      const botBubble = addBubble('bot', 'Thinking...');
+      const botBubble = addBubble('bot', 'Thinking…');
+
       try {
-        await callBackend({ messages: [{ role: 'user', content: message }] }, 
-          (chunk) => botBubble.innerHTML = `<strong>WiseWaste:</strong> ${chunk}`);
+        const text = await callGemini(message);
+        botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(text)}`;
       } catch (err) {
+        console.error(err);
         botBubble.innerHTML = `<strong>WiseWaste:</strong> Error fetching response.`;
       }
+      chatArea.scrollTop = chatArea.scrollHeight;
     });
+
+    // ====== Helpers ======
 
     function addBubble(role, html) {
       const div = document.createElement('div');
@@ -145,23 +171,47 @@
       return div;
     }
 
-    async function callBackend(payload, onChunk) {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.innerText = s;
+      return d.innerHTML;
+    }
+
+    /**
+     * Call Gemini from the browser (no streaming).
+     * If image is provided, pass inline_data (base64).
+     * @param {string} userText
+     * @param {{mime: string, base64: string}=} image
+     * @returns {Promise<string>}
+     */
+    async function callGemini(userText, image) {
+      const body = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: userText },
+              ...(image ? [{ inline_data: { mime_type: image.mime, data: image.base64 } }] : [])
+            ]
+          }
+        ],
+        generationConfig: { temperature: 0.7 }
+      };
+
+      const res = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error('Server error');
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let text = '';
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        text += decoder.decode(value, { stream: true });
-        onChunk(text);
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`Gemini HTTP ${res.status}: ${t}`);
       }
-      return text.trim();
+
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+      return text || "Sorry, I couldn't generate a response.";
     }
   </script>
 </body>

@@ -1,12 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <script>
-    // Persisted dark mode before paint
+    // Load dark mode before page paints
     if (localStorage.getItem('darkMode') === 'true') {
       document.documentElement.classList.add('dark');
     }
-    // ✅ Tailwind CDN config MUST be defined BEFORE the CDN script for dark:'class'
+
+    // Tailwind config must come BEFORE loading CDN
     window.tailwind = { config: { darkMode: 'class' } };
   </script>
   <meta charset="UTF-8" />
@@ -29,6 +31,7 @@
 
   <!-- Main Grid -->
   <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+    
     <!-- Scan Card -->
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 space-y-6 border border-green-100 dark:border-green-700">
       <h2 class="text-3xl font-bold text-green-700 dark:text-green-300">Scan a Waste Item</h2>
@@ -56,7 +59,9 @@
     <!-- ChatBot Card -->
     <div class="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 flex flex-col h-[600px] border border-green-100 dark:border-green-700">
       <h2 class="text-3xl font-bold text-green-700 dark:text-green-300 mb-4">Ask WiseWaste</h2>
+      
       <div id="chatArea" class="flex-1 overflow-y-auto space-y-4 border border-green-100 dark:border-green-700 bg-green-50 dark:bg-gray-700 p-4 rounded-xl"></div>
+
       <form id="chatForm" class="mt-4 flex gap-2" autocomplete="off">
         <input id="userInput" type="text" placeholder="Ask about disposal, bins, recycling..." class="flex-1 border border-green-300 dark:border-green-600 rounded-lg px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-300 dark:bg-gray-700 dark:text-white" />
         <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow">Send</button>
@@ -64,11 +69,12 @@
     </div>
   </div>
 
+  <!-- JavaScript -->
   <script>
-    // ====== CONFIG (⚠️ Browser key: only for local demos) ======
+    // ====== CONFIG ======
     const GEMINI_API_KEY = "AIzaSyDBjWHy1V5oeI9NT8Z4H5i0CIPsmy1uANE";
-    const GEMINI_MODEL   = "gemini-1.5-flash";
-    const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+    const GEMINI_MODEL   = "gemini-2.5-flash";
+    const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
     // DOM hooks
     const modeBtn = document.getElementById('modeBtn');
@@ -84,7 +90,7 @@
     const clsBin  = document.getElementById('clsBin');
     const clsTip  = document.getElementById('clsTip');
 
-    // Dark mode
+    // ====== DARK MODE ======
     modeBtn.addEventListener('click', () => {
       const html = document.documentElement;
       html.classList.toggle('dark');
@@ -93,60 +99,52 @@
 
     addImageBtn.addEventListener('click', () => imageInput.click());
 
-    // ====== Image Upload -> Gemini (non-streaming) ======
+    // ====== IMAGE UPLOAD ======
     imageInput.addEventListener('change', async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
 
-      // Downscale large images to avoid payload errors
-      const dataUrl = await toDataURL(file, 1280); // max dimension 1280px
-      const mime = file.type && file.type.startsWith('image/') ? file.type : 'image/png';
-      const base64 = String(dataUrl).split(',')[1] || '';
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        const mime = (file.type && file.type.startsWith('image/')) ? file.type : 'image/png';
+        const base64 = String(dataUrl).split(',')[1] || '';
 
-      // show preview
-      previewImage.src = dataUrl;
-      previewImage.classList.remove('hidden');
-      placeholderText.classList.add('hidden');
+        // show preview
+        previewImage.src = dataUrl;
+        previewImage.classList.remove('hidden');
+        placeholderText.classList.add('hidden');
 
-      // bubbles
-      addBubble('user', `<img src="${dataUrl}" class="mt-2 rounded-lg max-h-40" alt="uploaded"/>`);
-      const botBubble = addBubble('bot', 'Analyzing the item…');
+        // bubbles
+        addBubble('user', `<img src="${dataUrl}" class="mt-2 rounded-lg max-h-40" />`);
+        const botBubble = addBubble('bot', 'Analyzing the item…');
 
-      const prompt = [
-        "Classify this waste item. Provide these four lines exactly:",
-        "Type: <material/category>",
-        "Biodegradability: <biodegradable/non-biodegradable/partially>",
-        "Recommended Bin: <Green/Blue/Brown/Black> (typical Indian schemes)",
-        "Tip: <one short actionable tip>"
-      ].join("\n");
+        const prompt = [
+          "Classify this waste item. Provide these four lines exactly:",
+          "Type: <material/category>",
+          "Biodegradability: <biodegradable/non-biodegradable/partially>",
+          "Recommended Bin: <Green/Blue/Brown/Black> (typical Indian schemes)",
+          "Tip: <one short actionable tip>"
+        ].join("\n");
 
-      try {
-        const text = await callGemini(prompt, { mime, base64 });
-        botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(text)}`;
+        try {
+          const text = await callGemini(prompt, { mime, base64 });
+          botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(text)}`;
 
-        // Robust, multiline-safe extraction
-        const get = (re) => {
-          const m = text.match(re);
-          return m ? m[1].trim() : '—';
-        };
-        const tType = get(/^Type:\s*(.+)$/mi);
-        const tBio  = get(/^Biodegradability:\s*(.+)$/mi);
-        const tBin  = get(/^Recommended Bin:\s*(.+)$/mi);
-        const tTip  = get(/^Tip:\s*(.+)$/mi);
-
-        // Escape before inserting
-        clsType.innerHTML = `<strong>Type:</strong> ${escapeHtml(tType)}`;
-        clsBio.innerHTML  = `<strong>Biodegradability:</strong> ${escapeHtml(tBio)}`;
-        clsBin.innerHTML  = `<strong>Recommended Bin:</strong> ${escapeHtml(tBin)}`;
-        clsTip.innerHTML  = `Tip: ${escapeHtml(tTip)}`;
-      } catch (err) {
-        console.error(err);
-        botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(err.message || 'Image analysis failed.')}`;
-      }
-      chatArea.scrollTop = chatArea.scrollHeight;
+          clsType.innerHTML = `<strong>Type:</strong> ${(text.match(/Type:\s*(.*)/i) || ['','—'])[1]}`;
+          clsBio.innerHTML  = `<strong>Biodegradability:</strong> ${(text.match(/Biodegradability:\s*(.*)/i) || ['','—'])[1]}`;
+          clsBin.innerHTML  = `<strong>Recommended Bin:</strong> ${(text.match(/Recommended Bin:\s*(.*)/i) || ['','—'])[1]}`;
+          clsTip.innerHTML  = `Tip: ${(text.match(/Tip:\s*(.*)/i) || ['','—'])[1]}`;
+        } catch (err) {
+          console.error(err);
+          botBubble.innerHTML = `<strong>WiseWaste:</strong> ${err.message || 'Image analysis failed.'}`;
+        }
+        chatArea.scrollTop = chatArea.scrollHeight;
+      };
+      reader.readAsDataURL(file);
     });
 
-    // ====== Text Chat -> Gemini (non-streaming) ======
+    // ====== CHAT ======
     chatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const message = userInput.value.trim();
@@ -161,12 +159,12 @@
         botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(text)}`;
       } catch (err) {
         console.error(err);
-        botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(err.message || 'Error fetching response.')}`;
+        botBubble.innerHTML = `<strong>WiseWaste:</strong> ${err.message || 'Error fetching response.'}`;
       }
       chatArea.scrollTop = chatArea.scrollHeight;
     });
 
-    // ====== Helpers ======
+    // ====== HELPERS ======
     function addBubble(role, html) {
       const div = document.createElement('div');
       div.className = role === 'user'
@@ -180,27 +178,10 @@
 
     function escapeHtml(s) {
       const d = document.createElement('div');
-      d.innerText = String(s ?? '');
+      d.innerText = s;
       return d.innerHTML;
     }
 
-    // Resize image to reduce payload size
-    async function toDataURL(file, maxDim = 1280) {
-      const bitmap = await createImageBitmap(file);
-      const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
-      const w = Math.round(bitmap.width * scale);
-      const h = Math.round(bitmap.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      return canvas.toDataURL(file.type || 'image/png', 0.9);
-    }
-
-    /**
-     * Call Gemini from the browser (no streaming).
-     * If image provided, pass {mime, base64} as inline_data.
-     */
     async function callGemini(userText, image) {
       const body = {
         contents: [{
@@ -215,11 +196,7 @@
 
       const res = await fetch(GEMINI_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // ✅ cleaner than putting ?key= in the URL
-          "x-goog-api-key": GEMINI_API_KEY
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
 
@@ -245,4 +222,3 @@
   </script>
 </body>
 </html>
-

@@ -10,10 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WasteWise ChatBot UI</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { darkMode: 'class' };
-  </script>
-  <link href="https://unpkg.com/lucide-static@latest/font/lucide.css" rel="stylesheet" />
+  <script> tailwind.config = { darkMode: 'class' } </script>
 </head>
 <body class="bg-green-50 dark:bg-gray-900 dark:text-white min-h-screen p-6 transition-all duration-300">
 
@@ -41,16 +38,16 @@
 
       <input type="file" accept="image/*" capture="environment" class="hidden" id="imageInput" />
 
-      <button onclick="document.getElementById('imageInput').click()" class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition shadow">
+      <button id="addImageBtn" class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition shadow">
         Add Image
       </button>
 
-      <div class="bg-green-50 dark:bg-gray-700 border border-green-200 dark:border-green-600 rounded-xl p-5 space-y-2 shadow-inner">
+      <div id="classificationCard" class="bg-green-50 dark:bg-gray-700 border border-green-200 dark:border-green-600 rounded-xl p-5 space-y-2 shadow-inner">
         <h3 class="text-xl font-bold text-green-700 dark:text-green-200">Waste Classification</h3>
-        <p class="text-sm text-gray-700 dark:text-gray-200"><strong>Type:</strong> Dry Waste (Placeholder)</p>
-        <p class="text-sm text-gray-700 dark:text-gray-200"><strong>Biodegradability:</strong> Non-biodegradable (Placeholder)</p>
-        <p class="text-sm text-green-700 dark:text-green-300 font-medium"><strong>Recommended Bin:</strong> Blue (Placeholder)</p>
-        <p class="text-sm text-gray-600 dark:text-gray-400 italic">Tip: Rinse the item before disposal to avoid contamination. (Placeholder)</p>
+        <p id="clsType" class="text-sm text-gray-700 dark:text-gray-200"><strong>Type:</strong> —</p>
+        <p id="clsBio" class="text-sm text-gray-700 dark:text-gray-200"><strong>Biodegradability:</strong> —</p>
+        <p id="clsBin" class="text-sm text-green-700 dark:text-green-300 font-medium"><strong>Recommended Bin:</strong> —</p>
+        <p id="clsTip" class="text-sm text-gray-600 dark:text-gray-400 italic">Tip: —</p>
       </div>
     </div>
 
@@ -59,17 +56,15 @@
       <h2 class="text-3xl font-bold text-green-700 dark:text-green-300 mb-4">Ask WiseWaste</h2>
       
       <div id="chatArea" class="flex-1 overflow-y-auto space-y-4 border border-green-100 dark:border-green-700 bg-green-50 dark:bg-gray-700 p-4 rounded-xl">
-        <!-- Messages go here -->
       </div>
 
-      <div class="mt-4 flex gap-2">
+      <form id="chatForm" class="mt-4 flex gap-2">
         <input id="userInput" type="text" placeholder="Ask about disposal, bins, recycling..." class="flex-1 border border-green-300 dark:border-green-600 rounded-lg px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-300 dark:bg-gray-700 dark:text-white" />
-        <button id="sendBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow">Send</button>
-      </div>
+        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow">Send</button>
+      </form>
     </div>
   </div>
 
-  <!-- JavaScript -->
   <script>
     function toggleDarkMode() {
       const html = document.documentElement;
@@ -80,59 +75,94 @@
     const imageInput = document.getElementById('imageInput');
     const previewImage = document.getElementById('previewImage');
     const placeholderText = document.getElementById('placeholderText');
+    const addImageBtn = document.getElementById('addImageBtn');
     const chatArea = document.getElementById('chatArea');
-    const userInput = document.getElementById("userInput");
-    const sendBtn = document.getElementById("sendBtn");
+    const userInput = document.getElementById('userInput');
+    const chatForm = document.getElementById('chatForm');
+    const clsType = document.getElementById('clsType');
+    const clsBio  = document.getElementById('clsBio');
+    const clsBin  = document.getElementById('clsBin');
+    const clsTip  = document.getElementById('clsTip');
 
-    // Handle image upload
-    imageInput.addEventListener('change', function(event) {
+    addImageBtn.addEventListener('click', () => imageInput.click());
+
+    imageInput.addEventListener('change', async (event) => {
       const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const imageUrl = e.target.result;
+      if (!file) return;
 
-          // Show preview
-          previewImage.src = imageUrl;
-          previewImage.classList.remove('hidden');
-          placeholderText.classList.add('hidden');
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const imageUrl = e.target.result;
 
-          // Add user message with image
-          const userBubble = document.createElement("div");
-          userBubble.className = "text-sm text-gray-700 dark:text-white bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm";
-          userBubble.innerHTML = `<strong>User:</strong><br><img src="${imageUrl}" class="mt-2 rounded-lg max-h-40"/>`;
-          chatArea.appendChild(userBubble);
+        previewImage.src = imageUrl;
+        previewImage.classList.remove('hidden');
+        placeholderText.classList.add('hidden');
 
-          // Bot responds with TEXT only (this is what you want)
-          const botBubble = document.createElement("div");
-          botBubble.className = "text-sm text-gray-800 dark:text-gray-200 bg-green-100 dark:bg-green-900 p-3 rounded-lg shadow-sm";
-          botBubble.innerHTML = `<strong>WiseWaste:</strong> Thanks for your message. We are processing your request.`;
-          chatArea.appendChild(botBubble);
+        addBubble('user', `<img src="${imageUrl}" class="mt-2 rounded-lg max-h-40" />`);
+        const botBubble = addBubble('bot', 'Analyzing the item…');
 
-          chatArea.scrollTop = chatArea.scrollHeight;
+        const payload = {
+          messages: [{ role: 'user', content: 'Classify this waste item by type, biodegradability, and bin color. Add a disposal tip.' }],
+          imageDataUrl: imageUrl
         };
-        reader.readAsDataURL(file);
-      }
+
+        try {
+          const text = await callBackend(payload, (chunk) => botBubble.innerHTML = `<strong>WiseWaste:</strong> ${chunk}`);
+          clsType.innerHTML = `<strong>Type:</strong> ${(text.match(/Type:\s*(.*)/) || ['','—'])[1]}`;
+          clsBio.innerHTML  = `<strong>Biodegradability:</strong> ${(text.match(/Biodegradability:\s*(.*)/) || ['','—'])[1]}`;
+          clsBin.innerHTML  = `<strong>Recommended Bin:</strong> ${(text.match(/Recommended Bin:\s*(.*)/) || ['','—'])[1]}`;
+          clsTip.innerHTML  = `Tip: ${(text.match(/Tip:\s*(.*)/) || ['','—'])[1]}`;
+        } catch (e) {
+          botBubble.innerHTML = `<strong>WiseWaste:</strong> Error analyzing image.`;
+        }
+      };
+      reader.readAsDataURL(file);
     });
 
-    // Text input handling
-    sendBtn.addEventListener("click", function () {
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
       const message = userInput.value.trim();
-      if (message !== "") {
-        const userBubble = document.createElement("div");
-        userBubble.className = "text-sm text-gray-700 dark:text-white bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm";
-        userBubble.innerHTML = `<strong>User:</strong> ${message}`;
-        chatArea.appendChild(userBubble);
-
-        const botBubble = document.createElement("div");
-        botBubble.className = "text-sm text-gray-800 dark:text-gray-200 bg-green-100 dark:bg-green-900 p-3 rounded-lg shadow-sm";
-        botBubble.innerHTML = `<strong>WiseWaste:</strong> Thanks for your message. We are processing your request.`;
-        chatArea.appendChild(botBubble);
-
-        userInput.value = "";
-        chatArea.scrollTop = chatArea.scrollHeight;
+      if (!message) return;
+      addBubble('user', message);
+      userInput.value = '';
+      const botBubble = addBubble('bot', 'Thinking...');
+      try {
+        await callBackend({ messages: [{ role: 'user', content: message }] }, 
+          (chunk) => botBubble.innerHTML = `<strong>WiseWaste:</strong> ${chunk}`);
+      } catch (err) {
+        botBubble.innerHTML = `<strong>WiseWaste:</strong> Error fetching response.`;
       }
     });
+
+    function addBubble(role, html) {
+      const div = document.createElement('div');
+      div.className = role === 'user'
+        ? "text-sm text-gray-700 dark:text-white bg-white dark:bg-gray-600 p-3 rounded-lg shadow-sm"
+        : "text-sm text-gray-800 dark:text-gray-200 bg-green-100 dark:bg-green-900 p-3 rounded-lg shadow-sm";
+      div.innerHTML = `<strong>${role === 'user' ? 'User' : 'WiseWaste'}:</strong> ${html}`;
+      chatArea.appendChild(div);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      return div;
+    }
+
+    async function callBackend(payload, onChunk) {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Server error');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        onChunk(text);
+      }
+      return text.trim();
+    }
   </script>
 </body>
 </html>

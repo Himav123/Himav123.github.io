@@ -1,78 +1,67 @@
-import express from 'express';
-import fetch from 'node-fetch';
+
+import express from "express";
+import fetch from "node-fetch";
 
 const app = express();
-app.use(express.static('.'));
-app.use(express.json({ limit: '15mb' }));
+app.use(express.static("."));
+app.use(express.json({ limit: "15mb" }));
 
-const API_KEY = process.env.OPENAI_API_KEY;
-const MODEL = 'gpt-4.1-mini';
+// ⚠️ YOUR GEMINI API KEY (local use only)
+const GEMINI_API_KEY = "AIzaSyDBjWHy1V5oeI9NT8Z4H5i0CIPsmy1uANE";
 
-app.post('/api/chat', async (req, res) => {
+// Gemini model endpoint (Gemini 1.5 Flash = fast, cheap, multimodal)
+const MODEL = "gemini-1.5-flash";
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+app.post("/api/chat", async (req, res) => {
   const { messages, imageDataUrl } = req.body;
+
   try {
-    const parts = [];
-    if (messages?.[0]?.content) parts.push({ type: 'input_text', text: messages[0].content });
-    if (imageDataUrl) parts.push({ type: 'input_image', image_url: imageDataUrl });
+    // Combine user message(s)
+    const userMessage = messages?.[0]?.content || "Hello";
 
-    const sysPrompt = `You are WiseWaste, a friendly assistant who helps classify waste items.
-Always output the following fields on separate lines when classifying images:
-Type: ...
-Biodegradability: ...
-Recommended Bin: ...
-Tip: ...`;
-
-    const openaiRes = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json'
+    // Prepare Gemini request
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: userMessage },
+            ...(imageDataUrl
+              ? [{ inline_data: { mime_type: "image/png", data: imageDataUrl.split(",")[1] } }]
+              : []),
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.7,
       },
-      body: JSON.stringify({
-        model: MODEL,
-        input: [
-          { role: 'system', content: [{ type: 'input_text', text: sysPrompt }] },
-          { role: 'user', content: parts }
-        ],
-        stream: true
-      })
+    };
+
+    const geminiRes = await fetch(GEMINI_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
-    if (!openaiRes.ok || !openaiRes.body) {
-      res.status(500).send(await openaiRes.text());
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      res.status(500).send(errText);
       return;
     }
 
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Transfer-Encoding', 'chunked');
+    const data = await geminiRes.json();
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Sorry, I couldn’t generate a response.";
 
-    const reader = openaiRes.body.getReader();
-    const decoder = new TextDecoder();
-
-    let buffer = '';
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        const json = trimmed.slice(5).trim();
-        if (json === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(json);
-          const delta = evt?.delta?.output_text ?? '';
-          if (delta) res.write(delta);
-        } catch {}
-      }
-    }
-    res.end();
+    res.send(text);
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server error');
+    res.status(500).send("Server error");
   }
 });
 
-app.listen(3000, () => console.log('🌿 WiseWaste running at http://localhost:3000/scan.html'));
+app.listen(3000, () =>
+  console.log("♻️ WiseWaste Gemini server running at http://localhost:3000/scan.html")
+);

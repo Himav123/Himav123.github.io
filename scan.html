@@ -67,10 +67,11 @@
 
   <!-- JavaScript -->
   <script>
-    // ====== CONFIG (Option B – client-side call with exposed key) ======
-    const GEMINI_API_KEY = "AIzaSyDBjWHy1V5oeI9NT8Z4H5i0CIPsmy1uANE"; // <-- your key (public in page)
-    const GEMINI_MODEL = "gemini-1.5-flash";
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    // ====== CONFIG (Client-side Gemini – your key is public on the page) ======
+    // If you change your key, update here:
+    const GEMINI_API_KEY = "AIzaSyDBjWHy1V5oeI9NT8Z4H5i0CIPsmy1uANE";
+    const GEMINI_MODEL   = "gemini-1.5-flash";
+    const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
     function toggleDarkMode() {
       const html = document.documentElement;
@@ -78,6 +79,7 @@
       localStorage.setItem('darkMode', html.classList.contains('dark'));
     }
 
+    // DOM hooks
     const imageInput = document.getElementById('imageInput');
     const previewImage = document.getElementById('previewImage');
     const placeholderText = document.getElementById('placeholderText');
@@ -92,23 +94,23 @@
 
     addImageBtn.addEventListener('click', () => imageInput.click());
 
-    // Handle image upload: preview + send to Gemini (non-streaming)
+    // ====== Image Upload -> Gemini (non-streaming) ======
     imageInput.addEventListener('change', async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const dataUrl = e.target.result;  // e.g. data:image/png;base64,xxxx
+        const dataUrl = e.target.result;
         const mime = (file.type && file.type.startsWith('image/')) ? file.type : 'image/png';
-        const base64 = dataUrl.split(',')[1];
+        const base64 = String(dataUrl).split(',')[1] || '';
 
-        // Show preview
+        // show preview
         previewImage.src = dataUrl;
         previewImage.classList.remove('hidden');
         placeholderText.classList.add('hidden');
 
-        // Chat bubbles
+        // bubbles
         addBubble('user', `<img src="${dataUrl}" class="mt-2 rounded-lg max-h-40" />`);
         const botBubble = addBubble('bot', 'Analyzing the item…');
 
@@ -123,22 +125,20 @@
         try {
           const text = await callGemini(prompt, { mime, base64 });
           botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(text)}`;
-
-          // Fill the classification card with simple regex extraction
           clsType.innerHTML = `<strong>Type:</strong> ${(text.match(/Type:\s*(.*)/i) || ['','—'])[1]}`;
           clsBio.innerHTML  = `<strong>Biodegradability:</strong> ${(text.match(/Biodegradability:\s*(.*)/i) || ['','—'])[1]}`;
           clsBin.innerHTML  = `<strong>Recommended Bin:</strong> ${(text.match(/Recommended Bin:\s*(.*)/i) || ['','—'])[1]}`;
           clsTip.innerHTML  = `Tip: ${(text.match(/Tip:\s*(.*)/i) || ['','—'])[1]}`;
         } catch (err) {
           console.error(err);
-          botBubble.innerHTML = `<strong>WiseWaste:</strong> Sorry—image analysis failed.`;
+          botBubble.innerHTML = `<strong>WiseWaste:</strong> ${err.message || 'Image analysis failed.'}`;
         }
         chatArea.scrollTop = chatArea.scrollHeight;
       };
       reader.readAsDataURL(file);
     });
 
-    // Text chat (non-streaming)
+    // ====== Text Chat -> Gemini (non-streaming) ======
     chatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const message = userInput.value.trim();
@@ -153,13 +153,12 @@
         botBubble.innerHTML = `<strong>WiseWaste:</strong> ${escapeHtml(text)}`;
       } catch (err) {
         console.error(err);
-        botBubble.innerHTML = `<strong>WiseWaste:</strong> Error fetching response.`;
+        botBubble.innerHTML = `<strong>WiseWaste:</strong> ${err.message || 'Error fetching response.'}`;
       }
       chatArea.scrollTop = chatArea.scrollHeight;
     });
 
     // ====== Helpers ======
-
     function addBubble(role, html) {
       const div = document.createElement('div');
       div.className = role === 'user'
@@ -179,41 +178,52 @@
 
     /**
      * Call Gemini from the browser (no streaming).
-     * If image is provided, pass inline_data (base64).
-     * @param {string} userText
-     * @param {{mime: string, base64: string}=} image
-     * @returns {Promise<string>}
+     * If image provided, pass {mime, base64} as inline_data.
      */
     async function callGemini(userText, image) {
       const body = {
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: userText },
-              ...(image ? [{ inline_data: { mime_type: image.mime, data: image.base64 } }] : [])
-            ]
-          }
-        ],
+        contents: [{
+          role: "user",
+          parts: [
+            { text: userText },
+            ...(image ? [{ inline_data: { mime_type: image.mime, data: image.base64 } }] : [])
+          ]
+        }],
         generationConfig: { temperature: 0.7 }
       };
 
       const res = await fetch(GEMINI_URL, {
         method: "POST",
+        mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
 
+      // Better error surfacing
       if (!res.ok) {
-        const t = await res.text().catch(() => "");
-        throw new Error(`Gemini HTTP ${res.status}: ${t}`);
+        const txt = await res.text().catch(() => "");
+        console.error("Gemini error:", res.status, res.statusText, txt);
+        let msg = `HTTP ${res.status} ${res.statusText}`;
+        try {
+          const j = JSON.parse(txt);
+          const hint = j?.error?.message || j?.candidates?.[0]?.finishReason || txt;
+          if (hint) msg += ` — ${hint}`;
+        } catch {}
+        throw new Error(msg);
       }
 
       const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+      const text = (data?.candidates?.[0]?.content?.parts || [])
+        .map(p => p.text || "")
+        .join("")
+        .trim();
+
       return text || "Sorry, I couldn't generate a response.";
     }
   </script>
 </body>
 </html>
+
+
+
 

@@ -1,18 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WasteWise ChatBot UI</title>
+
+  <!-- Load dark mode before paint -->
   <script>
-    // Load dark mode before page paints
     if (localStorage.getItem('darkMode') === 'true') {
       document.documentElement.classList.add('dark');
     }
 
-    // Tailwind config must come BEFORE loading CDN
-    window.tailwind = { config: { darkMode: 'class' } };
+
+    tailwind = {
+      config: {
+        darkMode: 'class'
+      }
+    };
   </script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WasteWise ChatBot UI</title>
+
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://unpkg.com/lucide-static@latest/font/lucide.css" rel="stylesheet" />
 </head>
